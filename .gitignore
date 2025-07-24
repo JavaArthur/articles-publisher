@@ -89,6 +89,9 @@ coverage/
 # Config files with sensitive data (create config.example.json instead)
 config.json
 
+# Claude Code guidance file (should not be committed)
+CLAUDE.md
+
 # Hexo specific temporary files
 publish-*.log
 session-*.log
