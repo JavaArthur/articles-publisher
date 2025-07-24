@@ -1,0 +1,21 @@
+{
+  "name": "hexo-publisher",
+  "version": "2.0.0",
+  "description": "一键发布Obsidian文章到Hexo博客",
+  "main": "src/core/magic-publish.js",
+  "scripts": {
+    "publish": "node src/core/magic-publish.js",
+    "setup": "./scripts/setup.sh",
+    "server": "node src/server/server.js",
+    "dev": "node src/server/server.js",
+    "start": "node src/server/server.js"
+  },
+  "dependencies": {
+    "sharp": "^0.32.0",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5"
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}

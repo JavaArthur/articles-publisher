@@ -1,0 +1,47 @@
+# 在您的 Hexo 项目 _config.yml 中添加以下配置
+
+# hexo-filter-responsive-images 配置
+responsive_images:
+  # 匹配所有图片文件（包括WebP）
+  pattern: '**/*.+(webp|png|jpg|jpeg|gif)'
+  
+  # 生成多种尺寸的响应式图片
+  sizes:
+    # 移动端小图
+    mobile:
+      width: 480
+      quality: 80
+      
+    # 平板端中图  
+    tablet:
+      width: 800
+      quality: 85
+      
+    # 桌面端大图
+    desktop:
+      width: 1200
+      quality: 85
+      
+    # 高分辨率显示器
+    retina:
+      width: 2000
+      quality: 90
+      
+  # 可选：设置处理优先级
+  priority: 10
+
+# 使用示例（在文章或主题模板中）:
+# 
+# 自动生成的文件：
+# - /images/mobile_2024/07/24/image.webp
+# - /images/tablet_2024/07/24/image.webp  
+# - /images/desktop_2024/07/24/image.webp
+# - /images/retina_2024/07/24/image.webp
+#
+# HTML模板使用：
+# <picture>
+#   <source media="(max-width: 480px)" srcset="/images/mobile_image.webp">
+#   <source media="(max-width: 800px)" srcset="/images/tablet_image.webp">
+#   <source media="(max-width: 1200px)" srcset="/images/desktop_image.webp">
+#   <img src="/images/retina_image.webp" alt="描述" loading="lazy">
+# </picture>

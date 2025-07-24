@@ -1,0 +1,32 @@
+{
+  "hexo": {
+    "postsDir": "/path/to/your/hexo/source/_posts",
+    "imagesDir": "/path/to/your/hexo/source/images",
+    "gitRepo": "/path/to/your/hexo",
+    "baseUrl": "https://yourblog.com"
+  },
+  "git": {
+    "autoCommit": true,
+    "autoPush": true,
+    "branch": "main",
+    "commitPrefix": "📝 发布文章:"
+  },
+  "deploy": {
+    "autoHexoDeploy": true,
+    "cleanBeforeGenerate": true
+  },
+  "download": {
+    "compressImages": true,
+    "concurrency": 3,
+    "maxRetries": 3,
+    "timeout": 30000,
+    "compression": {
+      "maxWidth": 2400,
+      "maxHeight": 2400,
+      "jpegQuality": 95,
+      "pngCompressionLevel": 9,
+      "webpLossless": true,
+      "convertToWebP": false
+    }
+  }
+}
