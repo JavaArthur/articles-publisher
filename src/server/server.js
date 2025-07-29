@@ -27,6 +27,9 @@ class HexoPublisherServer {
   }
 
   setupMulter() {
+    // 确保uploads目录存在
+    this.ensureUploadsDirectory();
+
     // 设置文件上传的临时存储
     this.upload = multer({
       dest: 'uploads/',
@@ -35,6 +38,9 @@ class HexoPublisherServer {
         files: 2 // 最多2个文件（markdown + 封面）
       },
       fileFilter: (req, file, cb) => {
+        // 在文件过滤时再次确保目录存在
+        this.ensureUploadsDirectory();
+        
         if (file.fieldname === 'markdownFile') {
           // 检查markdown文件
           if (file.mimetype === 'text/markdown' || 
@@ -56,10 +62,18 @@ class HexoPublisherServer {
         }
       }
     });
+  }
 
-    // 确保uploads目录存在
-    if (!fs.existsSync('uploads')) {
-      fs.mkdirSync('uploads', { recursive: true });
+  // 确保uploads目录存在的独立方法
+  ensureUploadsDirectory() {
+    try {
+      if (!fs.existsSync('uploads')) {
+        fs.mkdirSync('uploads', { recursive: true });
+        this.logger.info('SERVER', '创建uploads目录成功');
+      }
+    } catch (error) {
+      this.logger.error('SERVER', `创建uploads目录失败: ${error.message}`);
+      console.error('创建uploads目录失败:', error.message);
     }
   }
 
@@ -159,6 +173,9 @@ class HexoPublisherServer {
     let tempFiles = []; // 用于清理临时文件
 
     try {
+      // 确保uploads目录存在
+      this.ensureUploadsDirectory();
+      
       // 检查必需的文件
       if (!files || !files.markdownFile || !files.markdownFile[0]) {
         throw new Error('请提供 Markdown 文件');

@@ -1,8 +1,11 @@
 {
   "name": "hexo-publisher",
-  "version": "2.0.0",
+  "version": "2.4.0",
   "description": "一键发布Obsidian文章到Hexo博客",
   "main": "src/core/magic-publish.js",
+  "bin": {
+    "magic-publish": "./bin/magic-publish"
+  },
   "scripts": {
     "publish": "node src/core/magic-publish.js",
     "setup": "./scripts/setup.sh",

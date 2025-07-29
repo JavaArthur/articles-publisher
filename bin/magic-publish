@@ -1,0 +1,115 @@
+#!/usr/bin/env node
+
+/**
+ * Magic Publish - 全局CLI命令
+ * 用法: magic-publish <文章路径>
+ */
+
+const path = require('path');
+const fs = require('fs');
+
+// 获取脚本所在目录，推导出项目根目录
+const scriptDir = __dirname;
+const projectRoot = path.dirname(scriptDir);
+const magicPublishPath = path.join(projectRoot, 'src', 'core', 'magic-publish.js');
+
+// 检查项目文件是否存在
+if (!fs.existsSync(magicPublishPath)) {
+  console.error('❌ 错误: 找不到magic-publish.js文件');
+  console.error(`   预期位置: ${magicPublishPath}`);
+  console.error('   请确保在正确的项目目录中安装此命令');
+  process.exit(1);
+}
+
+// 检查配置文件
+const configPath = path.join(projectRoot, 'config.json');
+if (!fs.existsSync(configPath)) {
+  console.error('❌ 错误: 找不到config.json配置文件');
+  console.error(`   预期位置: ${configPath}`);
+  console.error('   请先创建配置文件');
+  process.exit(1);
+}
+
+// 检查参数
+const args = process.argv.slice(2);
+if (args.length === 0) {
+  console.log('🎯 Magic Publish - 一键发布工具');
+  console.log('');
+  console.log('用法:');
+  console.log('  magic-publish <文章路径>');
+  console.log('');
+  console.log('示例:');
+  console.log('  magic-publish ~/Documents/我的文章.md');
+  console.log('  magic-publish ./文章.md');
+  console.log('  magic-publish "/path/to/article.md"');
+  console.log('');
+  console.log('功能:');
+  console.log('  • 自动下载外部图片到本地');
+  console.log('  • 转换图片链接为本地路径');
+  console.log('  • 保存到Hexo博客目录');
+  console.log('  • 自动Git提交和推送');
+  console.log('  • 自动Hexo生成和部署');
+  console.log('');
+  console.log('配置文件: ' + configPath);
+  process.exit(0);
+}
+
+const inputPath = args[0];
+
+// 记录当前工作目录，用于路径解析
+const currentWorkDir = process.cwd();
+
+// 将相对路径转换为绝对路径（基于当前工作目录）
+const articlePath = path.resolve(currentWorkDir, inputPath);
+
+// 检查文章文件是否存在
+if (!fs.existsSync(articlePath)) {
+  console.error(`❌ 错误: 文章文件不存在: ${articlePath}`);
+  console.error(`   输入路径: ${inputPath}`);
+  console.error(`   工作目录: ${currentWorkDir}`);
+  process.exit(1);
+}
+
+// 检查文件是否可读
+try {
+  fs.accessSync(articlePath, fs.constants.R_OK);
+} catch (error) {
+  console.error(`❌ 错误: 文章文件无法读取: ${articlePath}`);
+  console.error(`   详细错误: ${error.message}`);
+  process.exit(1);
+}
+
+// 显示当前工作信息
+console.log('🎯 Magic Publish 启动中...');
+console.log(`📄 输入路径: ${inputPath}`);
+console.log(`📄 文章路径: ${articlePath}`);
+console.log(`📁 当前目录: ${currentWorkDir}`);
+console.log(`📁 项目路径: ${projectRoot}`);
+console.log(`⚙️  配置文件: ${configPath}`);
+console.log('----------------------------------------');
+
+// 切换到项目目录
+process.chdir(projectRoot);
+
+// 设置文章路径参数（使用绝对路径）
+process.argv[2] = articlePath;
+
+// 动态加载并执行 magic-publish.js
+try {
+  const MagicPublisher = require(magicPublishPath);
+  
+  // 创建发布器实例并执行发布
+  const publisher = new MagicPublisher();
+  publisher.publish().then(() => {
+    // 发布成功
+    process.exit(0);
+  }).catch((error) => {
+    console.error('❌ 发布过程中出现错误:');
+    console.error(error.message);
+    process.exit(1);
+  });
+} catch (error) {
+  console.error('❌ 发布器初始化失败:');
+  console.error(error.message);
+  process.exit(1);
+}

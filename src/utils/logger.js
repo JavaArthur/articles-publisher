@@ -8,11 +8,24 @@ class Logger {
     this.sessionFile = `./logs/session-${this.sessionId}.log`;
     
     // 确保日志目录存在
-    if (!fs.existsSync('./logs')) {
-      fs.mkdirSync('./logs', { recursive: true });
-    }
+    this.ensureLogDirectory();
     
     this.startSession();
+  }
+
+  // 确保日志目录存在的独立方法
+  ensureLogDirectory() {
+    try {
+      if (!fs.existsSync('./logs')) {
+        fs.mkdirSync('./logs', { recursive: true });
+        console.log('[LOGGER] 创建logs目录成功');
+      }
+    } catch (error) {
+      console.error('[LOGGER] 创建logs目录失败:', error.message);
+      // 如果无法创建logs目录，使用当前目录作为后备
+      this.logFile = `./publish-${new Date().toISOString().split('T')[0]}.log`;
+      this.sessionFile = `./session-${this.sessionId}.log`;
+    }
   }
   
   generateSessionId() {
@@ -24,6 +37,7 @@ class Logger {
     const sessionStart = `\n${'='.repeat(80)}\n[${timestamp}] SESSION_START: ${this.sessionId}\n${'='.repeat(80)}\n`;
     
     try {
+      this.ensureLogDirectory(); // 确保目录存在
       fs.appendFileSync(this.logFile, sessionStart);
       fs.appendFileSync(this.sessionFile, sessionStart);
     } catch (error) {
@@ -44,6 +58,7 @@ class Logger {
     logEntry += '\n';
     
     try {
+      this.ensureLogDirectory(); // 确保目录存在
       fs.appendFileSync(this.logFile, logEntry);
       fs.appendFileSync(this.sessionFile, logEntry);
     } catch (error) {
@@ -107,6 +122,7 @@ class Logger {
     if (summary) {
       const summaryText = `会话总结:\n${JSON.stringify(summary, null, 2)}\n`;
       try {
+        this.ensureLogDirectory(); // 确保目录存在
         fs.appendFileSync(this.logFile, summaryText);
         fs.appendFileSync(this.sessionFile, summaryText);
       } catch (error) {
@@ -117,6 +133,7 @@ class Logger {
     const endMarker = `${'='.repeat(80)}\n\n`;
     
     try {
+      this.ensureLogDirectory(); // 确保目录存在
       fs.appendFileSync(this.logFile, sessionEnd + endMarker);
       fs.appendFileSync(this.sessionFile, sessionEnd + endMarker);
     } catch (error) {

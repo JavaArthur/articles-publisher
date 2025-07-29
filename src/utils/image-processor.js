@@ -115,6 +115,12 @@ class ImageProcessor {
 
   downloadFile(url, localPath) {
     return new Promise((resolve, reject) => {
+      // 确保目标目录存在
+      const dirPath = path.dirname(localPath);
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+      }
+
       const file = fs.createWriteStream(localPath);
       const timeout = this.config.download.timeout;
 
@@ -122,17 +128,70 @@ class ImageProcessor {
       const isHttps = url.startsWith('https:');
       const httpModule = isHttps ? https : http;
 
-      const request = httpModule.get(url, (response) => {
-        if (response.statusCode !== 200) {
-          reject(new Error(`HTTP ${response.statusCode}`));
+      // 设置请求选项，包含常用的请求头
+      const urlObj = new URL(url);
+      const options = {
+        hostname: urlObj.hostname,
+        port: urlObj.port,
+        path: urlObj.pathname + urlObj.search,
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+          'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Connection': 'keep-alive',
+          'Sec-Fetch-Mode': 'no-cors',
+          'Sec-Fetch-Site': 'cross-site',
+          'Referer': url
+        }
+      };
+
+      const request = httpModule.request(options, (response) => {
+        // 处理重定向
+        if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+          file.destroy();
+          fs.unlink(localPath, () => {});
+          this.downloadFile(response.headers.location, localPath).then(resolve).catch(reject);
           return;
         }
 
-        response.pipe(file);
+        if (response.statusCode !== 200) {
+          file.destroy();
+          fs.unlink(localPath, () => {});
+          reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+          return;
+        }
+
+        // 检查Content-Type
+        const contentType = response.headers['content-type'];
+        if (contentType && !contentType.startsWith('image/')) {
+          this.logger.warn('NETWORK', `可疑的Content-Type: ${contentType} for URL: ${url}`);
+        }
+
+        let responseStream = response;
+        
+        // 处理gzip压缩
+        if (response.headers['content-encoding'] === 'gzip') {
+          const zlib = require('zlib');
+          responseStream = response.pipe(zlib.createGunzip());
+        }
+
+        responseStream.pipe(file);
 
         file.on('finish', () => {
-          file.close();
-          resolve();
+          file.close(() => {
+            // 检查文件大小，如果太小可能是错误页面
+            const stats = fs.statSync(localPath);
+            if (stats.size < 100) {
+              fs.unlink(localPath, () => {});
+              reject(new Error(`下载的文件太小 (${stats.size} bytes)，可能是错误页面`));
+              return;
+            }
+            
+            this.logger.info('NETWORK', `成功下载图片: ${url} (${stats.size} bytes)`);
+            resolve();
+          });
         });
 
         file.on('error', (error) => {
@@ -143,10 +202,18 @@ class ImageProcessor {
 
       request.setTimeout(timeout, () => {
         request.destroy();
+        file.destroy();
+        fs.unlink(localPath, () => {});
         reject(new Error('下载超时'));
       });
 
-      request.on('error', reject);
+      request.on('error', (error) => {
+        file.destroy();
+        fs.unlink(localPath, () => {});
+        reject(error);
+      });
+
+      request.end();
     });
   }
 

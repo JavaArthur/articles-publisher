@@ -47,6 +47,9 @@
 # 安装 Node.js 依赖
 npm install
 
+# 安装全局CLI命令（可选，推荐）
+npm link
+
 # 或运行自动安装脚本
 ./setup.sh
 ```
@@ -92,6 +95,22 @@ node server.js
 ```
 
 #### 🖥️ 命令行模式
+
+##### 全局CLI命令（推荐）
+```bash
+# 安装全局命令（首次使用）
+npm link
+
+# 在任意目录使用全局命令发布文章
+magic-publish ~/Documents/我的文章.md
+magic-publish ./文章.md
+magic-publish "/path/to/article.md"
+
+# 查看帮助信息
+magic-publish
+```
+
+##### 传统脚本方式
 ```bash
 # 自动检测最近编辑的文件
 ./publish.sh
@@ -234,6 +253,12 @@ GET /api/health
 发布过程会生成日志文件 `publish-YYYY-MM-DD.log`，可用于问题诊断。
 
 ## 📝 版本历史
+
+### v2.4 - CLI增强版本 ✅
+- ✅ 新增全局CLI命令 `magic-publish`，支持在任意目录使用
+- ✅ 增强日志系统稳定性，自动创建日志目录
+- ✅ 改进错误处理和路径解析机制
+- ✅ 支持 `npm link` 全局安装，提升使用便利性
 
 ### v2.3 - 界面优化版本 ✅
 - ✅ 全新三栏布局设计（400px | flex | 450px）
