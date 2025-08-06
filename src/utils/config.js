@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// Load environment variables from .env file
+require('dotenv').config();
+
 class ConfigManager {
   constructor(configPath = './config.json') {
     this.configPath = configPath;
@@ -11,10 +14,52 @@ class ConfigManager {
     try {
       const configData = fs.readFileSync(this.configPath, 'utf8');
       this.config = JSON.parse(configData);
+      
+      // 从环境变量加载敏感信息
+      this.loadFromEnvironment();
+      
       this.validateConfig();
       return this.config;
     } catch (error) {
       throw new Error(`配置文件读取失败: ${error.message}`);
+    }
+  }
+
+  loadFromEnvironment() {
+    // 初始化 AI 配置（如果不存在）
+    if (!this.config.ai) {
+      this.config.ai = {};
+    }
+
+    // 从环境变量加载 AI 配置
+    if (process.env.AI_API_KEY) {
+      this.config.ai.apiKey = process.env.AI_API_KEY;
+    }
+    
+    if (process.env.AI_DEFAULT_MODEL) {
+      this.config.ai.defaultModel = process.env.AI_DEFAULT_MODEL;
+    } else if (!this.config.ai.defaultModel) {
+      this.config.ai.defaultModel = 'doubao-seed-1-6-250615';
+    }
+    
+    if (process.env.AI_SYSTEM_PROMPT) {
+      this.config.ai.systemPrompt = process.env.AI_SYSTEM_PROMPT;
+    } else if (!this.config.ai.systemPrompt) {
+      this.config.ai.systemPrompt = 'You are a helpful assistant.';
+    }
+    
+    if (process.env.AI_MODELS) {
+      this.config.ai.models = process.env.AI_MODELS.split(',').map(model => model.trim());
+    } else if (!this.config.ai.models) {
+      this.config.ai.models = ['doubao-seed-1-6-250615', 'doubao-seed-1-6-flash-250715'];
+    }
+    
+    // 保持 prompts 配置不变（从配置文件加载）
+    if (!this.config.ai.prompts) {
+      this.config.ai.prompts = {
+        title: "请为以下文章内容生成一个吸引人的标题，要求简洁明了，不超过30个字符：\n\n{content}",
+        frontmatter: "请为我提供的Markdown内容进行生成Hexo博客的页面属性（Front Matter）..."
+      };
     }
   }
 

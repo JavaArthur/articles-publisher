@@ -1,4 +1,6 @@
 {
+  "_comment": "配置文件模板 - 复制到 config.json 并修改实际值",
+  "_env_note": "AI 配置已移至环境变量，请复制 .env.example 到 .env 并配置 API 密钥",
   "hexo": {
     "postsDir": "/path/to/your/hexo/source/_posts",
     "imagesDir": "/path/to/your/hexo/source/images",
@@ -28,6 +30,23 @@
       "webpLossless": true,
       "webpQuality": 90,
       "convertToWebP": true
+    }
+  },
+  "obsidian": {
+    "vaultPath": "/path/to/your/obsidian/vault",
+    "autoDetectRecent": true
+  },
+  "ai": {
+    "_note": "AI 配置现在通过环境变量管理，请配置 .env 文件",
+    "_required_env_vars": [
+      "AI_API_KEY - 你的 AI API 密钥",
+      "AI_DEFAULT_MODEL - 默认AI模型 (可选)",
+      "AI_SYSTEM_PROMPT - 系统提示词 (可选)",
+      "AI_MODELS - 可用模型列表，逗号分隔 (可选)"
+    ],
+    "prompts": {
+      "title": "请为以下文章内容生成一个吸引人的标题，要求简洁明了，不超过30个字符：\n\n{content}",
+      "frontmatter": "请为我提供的Markdown内容进行生成Hexo博客的页面属性（Front Matter），要求如下：\n\n## 生成规则：\n1. **标题优化**：\n   - 基于文章内容提炼核心价值点\n   - 包含1-2个技术关键词\n   - 长度控制在15-30字\n   - 避免夸大词汇，以实用性为主\n   - 标题简洁明了，不使用emoji表情\n\n2. **SEO标签策略**：\n   - 提取3-6个精准技术标签\n   - 包含主要技术栈/工具名称\n   - 添加难度级别标签（如：入门、实战、进阶）\n   - 考虑CSDN热门搜索词\n\n3. **分类设置**：\n   - 根据文章技术领域确定主分类\n   - 常用分类：[技术教程, 开发实战, 工具使用, 问题解决, 经验分享]\n\n4. **其他属性**：\n   - date: 使用当前日期\n   - permalink: 基于英文关键词生成简洁URL\n   - cover: 设为false（除非有特定封面需求）\n\n## 输出格式：\n```yaml\n---\ntitle: [基于内容的吸引性标题]\ndate: [当前日期] 12:00:00\ntags: [相关技术标签数组]\ncategories: [主要分类]\npermalink: [英文url路径]/\ncover: false\n---\n```\n\n## 参考示例：\n实战类：Spring Boot + Redis 实现分布式锁的三种方案对比\n教程类：Vue3 + TypeScript 项目搭建完整指南\n问题解决类：解决 Docker 容器内存溢出的5个实用方法\n工具使用类：Git 高效工作流：从入门到团队协作最佳实践\n\n文章内容：\n{content}"
     }
   }
 }
