@@ -26,7 +26,8 @@
       "jpegQuality": 95,
       "pngCompressionLevel": 9,
       "webpLossless": true,
-      "convertToWebP": false
+      "webpQuality": 90,
+      "convertToWebP": true
     }
   }
 }

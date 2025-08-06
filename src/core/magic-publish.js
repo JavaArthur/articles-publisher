@@ -81,30 +81,85 @@ class MagicPublisher {
 
     const content = fs.readFileSync(this.currentFile, 'utf8');
 
-    // 提取所有外部图片链接（http/https开头的）
-    const imageRegex = /!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g;
-
     const images = [];
+    const processedUrls = new Set(); // 避免重复处理同一张图片
+
+    // 1. 提取标准markdown图片语法：![alt](url)
+    const standardImageRegex = /!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g;
     let match;
-
-    while ((match = imageRegex.exec(content)) !== null) {
+    while ((match = standardImageRegex.exec(content)) !== null) {
       const imageUrl = match[2];
-      const filename = this.imageProcessor.generateFilename(imageUrl);
+      if (!processedUrls.has(imageUrl)) {
+        processedUrls.add(imageUrl);
+        const filename = this.imageProcessor.generateFilename(imageUrl);
+        images.push({
+          alt: match[1],
+          originalUrl: imageUrl,
+          filename: filename,
+          localPath: `/images/${filename}`,
+          type: 'standard'
+        });
+      }
+    }
 
-      images.push({
-        alt: match[1],
-        originalUrl: imageUrl,
-        filename: filename,
-        localPath: `/images/${filename}`
+    // 2. 提取Front Matter中的封面图片
+    const frontMatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+    if (frontMatterMatch) {
+      const frontMatter = frontMatterMatch[1];
+      
+      // 匹配各种封面图片字段
+      const coverPatterns = [
+        /^cover:\s*(https?:\/\/[^\s]+)/m,
+        /^banner:\s*(https?:\/\/[^\s]+)/m,
+        /^image:\s*(https?:\/\/[^\s]+)/m,
+        /^thumbnail:\s*(https?:\/\/[^\s]+)/m,
+        /^featured_image:\s*(https?:\/\/[^\s]+)/m
+      ];
+
+      coverPatterns.forEach(pattern => {
+        const coverMatch = frontMatter.match(pattern);
+        if (coverMatch) {
+          const imageUrl = coverMatch[1];
+          if (!processedUrls.has(imageUrl)) {
+            processedUrls.add(imageUrl);
+            const filename = this.imageProcessor.generateFilename(imageUrl);
+            images.push({
+              alt: 'cover',
+              originalUrl: imageUrl,
+              filename: filename,
+              localPath: `/images/${filename}`,
+              type: 'cover'
+            });
+          }
+        }
       });
+    }
+
+    // 3. 提取HTML img标签中的图片
+    const htmlImageRegex = /<img[^>]+src=["']?(https?:\/\/[^"'\s>]+)["']?[^>]*>/g;
+    while ((match = htmlImageRegex.exec(content)) !== null) {
+      const imageUrl = match[1];
+      if (!processedUrls.has(imageUrl)) {
+        processedUrls.add(imageUrl);
+        const filename = this.imageProcessor.generateFilename(imageUrl);
+        images.push({
+          alt: 'html-image',
+          originalUrl: imageUrl,
+          filename: filename,
+          localPath: `/images/${filename}`,
+          type: 'html'
+        });
+      }
     }
 
     console.log(`   找到 ${images.length} 张外部图片需要处理`);
     if (images.length > 0) {
-      console.log('   图片来源:');
+      console.log('   图片详情:');
       images.forEach((img, index) => {
         const domain = new URL(img.originalUrl).hostname;
-        console.log(`     ${index + 1}. ${domain}`);
+        const typeLabel = img.type === 'cover' ? '🖼️ 封面' : 
+                         img.type === 'html' ? '🏷️ HTML' : '📷 标准';
+        console.log(`     ${index + 1}. ${typeLabel} ${domain}`);
       });
     }
 
@@ -115,12 +170,41 @@ class MagicPublisher {
     let newContent = content;
 
     downloadedImages.forEach(image => {
-      const originalPattern = `![${image.alt}](${image.originalUrl})`;
-      const localPattern = `![${image.alt}](${image.localPath})`;
-      newContent = newContent.replace(originalPattern, localPattern);
+      if (image.type === 'standard') {
+        // 标准markdown图片语法
+        const originalPattern = `![${image.alt}](${image.originalUrl})`;
+        const localPattern = `![${image.alt}](${image.localPath})`;
+        newContent = newContent.replace(originalPattern, localPattern);
+      } else if (image.type === 'cover') {
+        // Front Matter中的封面图片
+        // 匹配各种可能的封面字段格式
+        const patterns = [
+          new RegExp(`^(cover:\\s*)${this.escapeRegExp(image.originalUrl)}`, 'm'),
+          new RegExp(`^(banner:\\s*)${this.escapeRegExp(image.originalUrl)}`, 'm'),
+          new RegExp(`^(image:\\s*)${this.escapeRegExp(image.originalUrl)}`, 'm'),
+          new RegExp(`^(thumbnail:\\s*)${this.escapeRegExp(image.originalUrl)}`, 'm'),
+          new RegExp(`^(featured_image:\\s*)${this.escapeRegExp(image.originalUrl)}`, 'm')
+        ];
+
+        patterns.forEach(pattern => {
+          newContent = newContent.replace(pattern, `$1${image.localPath}`);
+        });
+      } else if (image.type === 'html') {
+        // HTML img标签
+        const imgTagRegex = new RegExp(
+          `<img([^>]+)src=["']?${this.escapeRegExp(image.originalUrl)}["']?([^>]*)>`,
+          'g'
+        );
+        newContent = newContent.replace(imgTagRegex, `<img$1src="${image.localPath}"$2>`);
+      }
     });
 
     return newContent;
+  }
+
+  // 辅助函数：转义正则表达式特殊字符
+  escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   saveToHexo(content) {

@@ -24,6 +24,7 @@ class HexoPublisherServer {
     this.app.use(cors());
     this.app.use(express.json());
     this.app.use(express.static(path.join(__dirname, '../../public'))); // 服务静态文件
+    this.app.use('/uploads', express.static('uploads')); // 服务上传文件
   }
 
   setupMulter() {
@@ -106,10 +107,109 @@ class HexoPublisherServer {
         res.json({
           postsDir: config.hexo.postsDir,
           imagesDir: config.hexo.imagesDir,
-          baseUrl: config.hexo.baseUrl
+          baseUrl: config.hexo.baseUrl,
+          compression: config.download?.compression || {}
         });
       } catch (error) {
         res.status(500).json({ error: '配置读取失败' });
+      }
+    });
+
+    // API: 获取压缩配置详情
+    this.app.get('/api/compression-config', (req, res) => {
+      try {
+        const config = this.configManager.getConfig();
+        const compression = config.download?.compression || {};
+        
+        res.json({
+          convertToWebP: compression.convertToWebP || false,
+          webpLossless: compression.webpLossless !== false,
+          webpQuality: compression.webpQuality || 90,
+          maxWidth: compression.maxWidth || 2400,
+          maxHeight: compression.maxHeight || 2400,
+          jpegQuality: compression.jpegQuality || 95,
+          pngCompressionLevel: compression.pngCompressionLevel || 9
+        });
+      } catch (error) {
+        res.status(500).json({ error: '压缩配置读取失败' });
+      }
+    });
+
+    // API: 图片压缩测试
+    this.app.post('/api/test-compression', this.upload.single('image'), async (req, res) => {
+      let tempFiles = [];
+      
+      try {
+        if (!req.file) {
+          throw new Error('请提供图片文件');
+        }
+
+        const imageFile = req.file;
+        tempFiles.push(imageFile.path);
+
+        this.logger.info('TEST', '开始图片压缩测试', {
+          originalName: imageFile.originalname,
+          size: imageFile.size,
+          mimetype: imageFile.mimetype
+        });
+
+        // 加载配置
+        const config = this.configManager.getConfig();
+        const imageProcessor = new ImageProcessor(config, this.logger);
+        
+        // 生成测试文件路径
+        const timestamp = Date.now();
+        const ext = path.extname(imageFile.originalname);
+        const baseName = path.basename(imageFile.originalname, ext);
+        const testFileName = `test_${timestamp}_${imageProcessor.sanitizeFilename(baseName)}`;
+        
+        // 测试压缩
+        const testPath = path.join('uploads', `${testFileName}_compressed${ext}`);
+        tempFiles.push(testPath);
+        
+        const originalSize = fs.statSync(imageFile.path).size;
+        
+        // 执行压缩
+        await this.compressAndSaveImage(imageFile.path, testPath, config);
+        
+        const compressedSize = fs.statSync(testPath).size;
+        const reduction = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
+        
+        // 检查是否转换为WebP
+        const sharp = require('sharp');
+        const metadata = await sharp(testPath).metadata();
+        
+        res.json({
+          success: true,
+          originalName: imageFile.originalname,
+          originalSize: originalSize,
+          compressedSize: compressedSize,
+          reduction: reduction,
+          format: metadata.format,
+          width: metadata.width,
+          height: metadata.height,
+          convertedToWebP: metadata.format === 'webp',
+          testPath: `/uploads/${path.basename(testPath)}`
+        });
+
+        this.logger.info('TEST', '图片压缩测试完成', {
+          originalSize: originalSize,
+          compressedSize: compressedSize,
+          reduction: reduction,
+          format: metadata.format
+        });
+
+      } catch (error) {
+        this.logger.error('TEST', `图片压缩测试失败: ${error.message}`);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      } finally {
+        // 清理临时文件（延迟清理以便前端可以访问）
+        setTimeout(() => {
+          this.cleanupTempFiles(tempFiles);
+        }, 30000); // 30秒后清理
       }
     });
 
@@ -140,6 +240,141 @@ class HexoPublisherServer {
     // API: 健康检查
     this.app.get('/api/health', (req, res) => {
       res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    });
+
+    // API: 获取AI配置
+    this.app.get('/api/ai/config', (req, res) => {
+      try {
+        const config = this.configManager.getConfig();
+        const aiConfig = config.ai || {};
+        
+        res.json({
+          success: true,
+          config: {
+            hasApiKey: !!aiConfig.apiKey,
+            defaultModel: aiConfig.defaultModel || 'doubao-1-5-pro-32k-250115',
+            systemPrompt: aiConfig.systemPrompt || 'You are a helpful assistant.',
+            models: aiConfig.models || [],
+            prompts: aiConfig.prompts || {}
+          }
+        });
+      } catch (error) {
+        res.status(500).json({ 
+          success: false,
+          error: 'AI配置读取失败: ' + error.message 
+        });
+      }
+    });
+
+    // API: 更新AI配置
+    this.app.put('/api/ai/config', (req, res) => {
+      try {
+        const { apiKey, defaultModel, prompts } = req.body;
+        const config = this.configManager.getConfig();
+        
+        if (!config.ai) {
+          config.ai = {};
+        }
+        
+        if (apiKey !== undefined) config.ai.apiKey = apiKey;
+        if (defaultModel !== undefined) config.ai.defaultModel = defaultModel;
+        if (prompts !== undefined) config.ai.prompts = { ...config.ai.prompts, ...prompts };
+        
+        // 保存配置
+        const fs = require('fs');
+        fs.writeFileSync(this.configManager.configPath, JSON.stringify(config, null, 2));
+        
+        this.logger.info('CONFIG', 'AI配置已更新');
+        
+        res.json({
+          success: true,
+          message: 'AI配置更新成功'
+        });
+      } catch (error) {
+        this.logger.error('CONFIG', `AI配置更新失败: ${error.message}`);
+        res.status(500).json({ 
+          success: false,
+          error: 'AI配置更新失败: ' + error.message 
+        });
+      }
+    });
+
+    // API: AI生成标题
+    this.app.post('/api/ai/generate-title', async (req, res) => {
+      try {
+        const { content } = req.body;
+        
+        if (!content) {
+          return res.status(400).json({
+            success: false,
+            error: '请提供文章内容'
+          });
+        }
+        
+        const config = this.configManager.getConfig();
+        const aiConfig = config.ai || {};
+        
+        if (!aiConfig.apiKey) {
+          return res.status(400).json({
+            success: false,
+            error: '请先配置AI API密钥'
+          });
+        }
+        
+        // 调用AI生成标题
+        const title = await this.generateAITitle(content, aiConfig);
+        
+        res.json({
+          success: true,
+          title: title
+        });
+        
+      } catch (error) {
+        this.logger.error('AI', `标题生成失败: ${error.message}`);
+        res.status(500).json({
+          success: false,
+          error: '标题生成失败: ' + error.message
+        });
+      }
+    });
+
+    // API: AI生成前言
+    this.app.post('/api/ai/generate-frontmatter', async (req, res) => {
+      try {
+        const { content } = req.body;
+        
+        if (!content) {
+          return res.status(400).json({
+            success: false,
+            error: '请提供文章内容'
+          });
+        }
+        
+        const config = this.configManager.getConfig();
+        const aiConfig = config.ai || {};
+        
+        if (!aiConfig.apiKey) {
+          return res.status(400).json({
+            success: false,
+            error: '请先配置AI API密钥'
+          });
+        }
+        
+        // 调用AI生成前言
+        const frontmatter = await this.generateAIFrontmatter(content, aiConfig);
+        
+        res.json({
+          success: true,
+          frontmatter: frontmatter
+        });
+        
+      } catch (error) {
+        this.logger.error('AI', `前言生成失败: ${error.message}`);
+        res.status(500).json({
+          success: false,
+          error: '前言生成失败: ' + error.message
+        });
+      }
     });
 
     // 错误处理中间件
@@ -267,7 +502,11 @@ class HexoPublisherServer {
       const cleanName = imageProcessor.sanitizeFilename(baseName);
       // 如果清理后的名字为空或太短，使用默认名称
       const finalName = cleanName && cleanName.length > 2 ? cleanName : 'cover_image';
-      const filename = `${year}/${month}/${day}/cover_${timestamp}_${finalName}${ext}`;
+      
+      // 如果启用WebP转换，使用.webp扩展名
+      const compression = config.download?.compression || {};
+      const targetExt = (compression.convertToWebP !== false) ? '.webp' : ext;
+      const filename = `${year}/${month}/${day}/cover_${timestamp}_${finalName}${targetExt}`;
       
       const fullPath = path.join(config.hexo.imagesDir, filename);
       const dir = path.dirname(fullPath);
@@ -302,56 +541,132 @@ class HexoPublisherServer {
       const metadata = await sharpInstance.metadata();
       const { format, width, height } = metadata;
       
-      // 应用尺寸限制
+      console.log(`   📊 原始图片信息: ${format} ${width}x${height}`);
+      
+      // 应用尺寸限制和智能调整
       const maxWidth = compression.maxWidth || 2400;
       const maxHeight = compression.maxHeight || 2400;
       
       if (width > maxWidth || height > maxHeight) {
-        sharpInstance = sharpInstance.resize(maxWidth, maxHeight, { 
+        const resizeOptions = {
           withoutEnlargement: true,
           fit: 'inside'
+        };
+        
+        // 智能调整大小选项
+        if (compression.smartResize) {
+          resizeOptions.kernel = 'lanczos3';
+          resizeOptions.fastShrinkOnLoad = true;
+        }
+        
+        // 保持宽高比
+        if (compression.preserveAspectRatio !== false) {
+          resizeOptions.fit = 'inside';
+        }
+        
+        sharpInstance = sharpInstance.resize(maxWidth, maxHeight, resizeOptions);
+        console.log(`   📐 智能调整尺寸: 最大 ${maxWidth}x${maxHeight}`);
+      }
+      
+      // Web优化处理
+      if (compression.optimizeForWeb) {
+        sharpInstance = sharpInstance.sharpen({
+          sigma: 0.5,
+          flat: 1.0,
+          jagged: 1.5
         });
       }
 
-      // 根据格式进行压缩
-      if (format === 'jpeg' || format === 'jpg') {
-        sharpInstance = sharpInstance.jpeg({ 
-          quality: compression.jpegQuality || 95,
-          progressive: true,
-          mozjpeg: true,
-          optimiseScans: true,
-          optimiseCoding: true
-        });
-      } else if (format === 'png') {
-        sharpInstance = sharpInstance.png({ 
-          compressionLevel: compression.pngCompressionLevel || 9,
-          adaptiveFiltering: true,
-          palette: true
-        });
-      } else if (format === 'webp') {
+      // 强制转换为WebP格式（如果配置启用）
+      if (compression.convertToWebP !== false) {
+        // 修改目标文件路径为.webp扩展名
+        const targetDir = path.dirname(targetPath);
+        const targetName = path.basename(targetPath, path.extname(targetPath));
+        const webpTargetPath = path.join(targetDir, targetName + '.webp');
+        
         const webpOptions = {
-          effort: 6
+          effort: 6,
+          smartSubsample: true,
+          nearLossless: false
         };
         
-        if (compression.webpLossless !== false) {
+        // 根据配置决定是否使用无损压缩
+        if (compression.webpLossless === true) {
           webpOptions.lossless = true;
           webpOptions.quality = 100;
+          console.log(`   🔄 转换为WebP: 无损压缩`);
         } else {
           webpOptions.lossless = false;
           webpOptions.quality = compression.webpQuality || 85;
+          // 对于有损压缩，使用更好的压缩算法
+          webpOptions.alphaQuality = Math.min(webpOptions.quality + 10, 100);
+          console.log(`   🔄 转换为WebP: 有损压缩 (质量: ${webpOptions.quality})`);
         }
         
         sharpInstance = sharpInstance.webp(webpOptions);
-      }
+        
+        await sharpInstance.toFile(webpTargetPath);
+        
+        // 更新目标路径为WebP文件
+        targetPath = webpTargetPath;
+      } else {
+        // 如果不转换WebP，按原格式压缩
+        if (format === 'jpeg' || format === 'jpg') {
+          const jpegOptions = {
+            quality: compression.jpegQuality || 88,
+            progressive: true,
+            optimiseScans: true,
+            optimiseCoding: true
+          };
+          
+          // Web优化选项
+          if (compression.optimizeForWeb) {
+            jpegOptions.mozjpeg = true;
+            jpegOptions.trellisQuantisation = true;
+            jpegOptions.overshootDeringing = true;
+          }
+          
+          sharpInstance = sharpInstance.jpeg(jpegOptions);
+        } else if (format === 'png') {
+          const pngOptions = {
+            compressionLevel: compression.pngCompressionLevel || 8,
+            adaptiveFiltering: true
+          };
+          
+          // Web优化选项
+          if (compression.optimizeForWeb) {
+            pngOptions.palette = true;
+            pngOptions.effort = 10;
+          }
+          
+          sharpInstance = sharpInstance.png(pngOptions);
+        } else if (format === 'webp') {
+          const webpOptions = {
+            effort: 6,
+            smartSubsample: true
+          };
+          
+          if (compression.webpLossless !== false) {
+            webpOptions.lossless = true;
+            webpOptions.quality = 100;
+          } else {
+            webpOptions.lossless = false;
+            webpOptions.quality = compression.webpQuality || 85;
+            webpOptions.alphaQuality = Math.min(webpOptions.quality + 10, 100);
+          }
+          
+          sharpInstance = sharpInstance.webp(webpOptions);
+        }
 
-      await sharpInstance.toFile(targetPath);
+        await sharpInstance.toFile(targetPath);
+      }
       
       // 获取文件大小信息
       const originalSize = fs.statSync(sourcePath).size;
       const compressedSize = fs.statSync(targetPath).size;
       const reduction = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
       
-      console.log(`   🗜️  压缩完成: ${(originalSize/1024).toFixed(2)}KB → ${(compressedSize/1024).toFixed(2)}KB (减少${reduction}%)`);
+      console.log(`   🗜️  智能压缩完成: ${(originalSize/1024).toFixed(2)}KB → ${(compressedSize/1024).toFixed(2)}KB (减少${reduction}%)`);
       
     } catch (error) {
       // 如果压缩失败，直接复制原文件
@@ -431,6 +746,90 @@ cover: ${coverUrl}
       } catch (error) {
         console.warn(`清理临时文件失败: ${file}`, error.message);
       }
+    });
+  }
+
+  // AI生成标题方法
+  async generateAITitle(content, aiConfig) {
+    const prompt = aiConfig.prompts?.title || '请为以下文章内容生成一个吸引人的标题：\n\n{content}';
+    const finalPrompt = prompt.replace('{content}', content.substring(0, 1000)); // 限制内容长度
+    
+    return await this.callVolcengineAI(finalPrompt, aiConfig);
+  }
+
+  // AI生成前言方法
+  async generateAIFrontmatter(content, aiConfig) {
+    const prompt = aiConfig.prompts?.frontmatter || '请为以下文章生成Hexo博客的front matter，包含title、date、tags、categories等字段，返回YAML格式：\n\n{content}';
+    const finalPrompt = prompt.replace('{content}', content.substring(0, 1500)); // 限制内容长度
+    
+    return await this.callVolcengineAI(finalPrompt, aiConfig);
+  }
+
+  // 调用Volcengine AI API
+  async callVolcengineAI(prompt, aiConfig) {
+    const https = require('https');
+    
+    const requestData = {
+      model: aiConfig.defaultModel || 'doubao-1-5-pro-32k-250115',
+      messages: [
+        {
+          role: 'system',
+          content: aiConfig.systemPrompt || 'You are a helpful assistant.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: 1000,
+      temperature: 0.7
+    };
+
+    const options = {
+      hostname: 'ark.cn-beijing.volces.com',
+      port: 443,
+      path: '/api/v3/chat/completions',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${aiConfig.apiKey}`
+      }
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(options, (res) => {
+        let data = '';
+        
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        
+        res.on('end', () => {
+          try {
+            const response = JSON.parse(data);
+            
+            if (response.error) {
+              reject(new Error(response.error.message || 'AI API调用失败'));
+              return;
+            }
+            
+            if (response.choices && response.choices[0] && response.choices[0].message) {
+              resolve(response.choices[0].message.content.trim());
+            } else {
+              reject(new Error('AI响应格式错误'));
+            }
+          } catch (error) {
+            reject(new Error('AI响应解析失败: ' + error.message));
+          }
+        });
+      });
+      
+      req.on('error', (error) => {
+        reject(new Error('AI API请求失败: ' + error.message));
+      });
+      
+      req.write(JSON.stringify(requestData));
+      req.end();
     });
   }
 

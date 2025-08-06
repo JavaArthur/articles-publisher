@@ -95,3 +95,6 @@ CLAUDE.md
 # Hexo specific temporary files
 publish-*.log
 session-*.log
+
+.promptx/
+.trae/

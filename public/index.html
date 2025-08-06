@@ -34,6 +34,7 @@
             color: white;
             padding: 25px 40px;
             text-align: center;
+            position: relative;
         }
 
         .header h1 {
@@ -47,18 +48,42 @@
             opacity: 0.9;
         }
 
-        /* 新的三栏布局 */
+        .nav-links {
+            position: absolute;
+            top: 25px;
+            right: 40px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* 优化的三栏布局 */
         .main-content {
             display: grid;
-            grid-template-columns: 400px 1fr 450px;
+            grid-template-columns: 320px 1fr 380px;
             gap: 0;
             min-height: calc(100vh - 200px);
         }
 
-        /* 左侧：配置和上传区域 */
+        /* 左侧：文章上传和AI功能区域 */
         .left-panel {
             background: #f8f9fa;
-            padding: 30px;
+            padding: 25px 20px;
             border-right: 1px solid #e9ecef;
             overflow-y: auto;
         }
@@ -74,113 +99,87 @@
         /* 右侧：封面和发布控制 */
         .right-panel {
             background: #f1f3f4;
-            padding: 30px;
+            padding: 25px 20px;
             overflow-y: auto;
         }
 
-        /* 配置区域 */
-        .config-section {
-            background: #e8f5e8;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 25px;
-            border-left: 4px solid #28a745;
+        /* AI功能区域 */
+        .ai-section {
+            background: white;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 18px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            border: 1px solid #e8f4fd;
+            border-left: 3px solid #2196f3;
         }
 
-        .config-section h4 {
-            color: #155724;
-            margin-bottom: 15px;
+        .ai-section h4 {
+            color: #1976d2;
+            margin-bottom: 12px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .ai-section h4::before {
+            content: "🤖";
             font-size: 1.1rem;
         }
 
-        .config-item {
-            margin: 15px 0;
-            font-size: 0.9rem;
-        }
-
-        .config-item.editable {
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .config-label {
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 8px;
-        }
-
-        .config-value {
-            color: #6c757d;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 0.8rem;
-            background: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid #dee2e6;
-        }
-
-        .config-input {
+        .ai-generate-btn {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #28a745;
-            border-radius: 6px;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 0.85rem;
-            margin-top: 5px;
-        }
-
-        .config-input:focus {
-            outline: none;
-            border-color: #28a745;
-            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
-        }
-
-        .config-buttons {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .config-btn {
-            padding: 8px 16px;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #2196f3 0%, #21cbf3 100%);
+            color: white;
             border: none;
             border-radius: 6px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            font-size: 0.9rem;
             font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 12px;
         }
 
-        .config-btn.save {
-            background: #28a745;
-            color: white;
-        }
-
-        .config-btn.save:hover {
-            background: #218838;
+        .ai-generate-btn:hover:not(:disabled) {
             transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(33, 150, 243, 0.3);
         }
 
-        .config-btn.cancel {
-            background: #6c757d;
-            color: white;
+        .ai-generate-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
-        .config-btn.cancel:hover {
-            background: #5a6268;
+        .ai-status {
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+            margin-top: 8px;
+            display: none;
+            line-height: 1.3;
         }
 
-        .config-btn.edit {
-            background: #17a2b8;
-            color: white;
-            padding: 6px 12px;
-            font-size: 0.8rem;
+        .ai-status.loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
         }
 
-        .config-btn.edit:hover {
-            background: #138496;
-            transform: translateY(-1px);
+        .ai-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .ai-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
 
         /* 上传区域 */
@@ -361,10 +360,15 @@
         .preview-content {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             padding: 30px;
             background: white;
             font-size: 1rem;
             line-height: 1.7;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
         }
 
         .raw-content {
@@ -372,12 +376,16 @@
             font-size: 0.9rem;
             line-height: 1.6;
             white-space: pre-wrap;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
             color: #495057;
             background: #f8f9fa;
             padding: 20px;
             border-radius: 8px;
-            margin: -30px;
-            min-height: calc(100% + 60px);
+            margin: 0;
+            min-height: 100%;
+            overflow-x: auto;
         }
 
         .preview-content img {
@@ -428,14 +436,23 @@
             padding: 20px;
             border-radius: 8px;
             overflow-x: auto;
+            overflow-y: auto;
+            max-width: 100%;
             margin: 20px 0;
             border-left: 4px solid #667eea;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
         }
 
         .preview-content pre code {
             background: none;
             padding: 0;
             color: #495057;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         .empty-preview {
@@ -472,10 +489,17 @@
         .cover-upload-area {
             border: 2px dashed #dee2e6;
             border-radius: 12px;
-            padding: 30px;
+            padding: 20px;
             transition: all 0.3s ease;
-            cursor: pointer;
             margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+            max-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fafbfc;
         }
 
         .cover-upload-area:hover {
@@ -486,6 +510,49 @@
         .cover-upload-area.has-image {
             border-color: #28a745;
             background: #f8fff8;
+        }
+
+        .cover-upload-area .file-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .cover-upload-area label {
+            pointer-events: none;
+            text-align: center;
+            width: 100%;
+            display: block;
+            cursor: pointer;
+        }
+
+        .cover-upload-area label p {
+            margin: 0;
+            padding: 5px 0;
+        }
+
+        .cover-upload-area .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            opacity: 0.6;
+            display: block;
+        }
+
+        .cover-upload-area .upload-text {
+            font-size: 1rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .cover-upload-area .upload-hint {
+            font-size: 0.85rem;
+            color: #adb5bd;
+            margin-top: 5px;
         }
 
         .cover-preview {
@@ -638,9 +705,15 @@
         }
 
         /* 响应式设计 */
+        @media (max-width: 1600px) {
+            .main-content {
+                grid-template-columns: 300px 1fr 360px;
+            }
+        }
+
         @media (max-width: 1400px) {
             .main-content {
-                grid-template-columns: 350px 1fr 400px;
+                grid-template-columns: 280px 1fr 340px;
             }
             
             .header h1 {
@@ -650,40 +723,155 @@
 
         @media (max-width: 1200px) {
             .main-content {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto auto auto;
+                display: flex;
+                flex-direction: column;
+                gap: 0;
             }
             
             .left-panel, .right-panel {
                 border-right: none;
                 border-bottom: 1px solid #e9ecef;
+                padding: 20px;
+                flex: none;
             }
 
             .center-panel {
                 border-right: none;
-                min-height: 600px;
+                min-height: 500px;
+                flex: 1;
+                order: 2;
+            }
+
+            .left-panel {
+                order: 1;
+            }
+
+            .right-panel {
+                order: 3;
+                border-bottom: none;
             }
         }
 
         @media (max-width: 768px) {
             body {
-                padding: 10px;
+                padding: 8px;
+            }
+
+            .container {
+                border-radius: 12px;
+                min-height: calc(100vh - 16px);
             }
 
             .header {
-                padding: 20px;
+                padding: 15px 12px;
             }
 
             .header h1 {
-                font-size: 2rem;
+                font-size: 1.6rem;
+                margin-bottom: 6px;
+            }
+
+            .header p {
+                font-size: 0.9rem;
+            }
+
+            .nav-links {
+                position: static;
+                justify-content: center;
+                margin-top: 12px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .nav-link {
+                padding: 6px 10px;
+                font-size: 0.75rem;
+            }
+
+            .main-content {
+                min-height: calc(100vh - 140px);
             }
 
             .left-panel, .right-panel {
-                padding: 20px;
+                padding: 12px;
             }
 
             .preview-content {
-                padding: 20px;
+                padding: 12px;
+            }
+
+            .ai-section, .upload-section, .cover-section, .publish-section {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+
+            .ai-generate-btn, .publish-button {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                min-height: calc(100vh - 10px);
+                border-radius: 8px;
+            }
+
+            .header {
+                padding: 12px 8px;
+            }
+
+            .header h1 {
+                font-size: 1.4rem;
+                margin-bottom: 4px;
+            }
+
+            .header p {
+                font-size: 0.8rem;
+            }
+
+            .nav-links {
+                gap: 6px;
+                margin-top: 8px;
+            }
+
+            .nav-link {
+                padding: 4px 8px;
+                font-size: 0.7rem;
+            }
+
+            .main-content {
+                min-height: calc(100vh - 120px);
+            }
+
+            .left-panel, .right-panel {
+                padding: 8px;
+            }
+
+            .preview-content {
+                padding: 8px;
+            }
+
+            .ai-section, .upload-section, .cover-section, .publish-section {
+                padding: 8px;
+                margin-bottom: 8px;
+            }
+
+            .ai-generate-btn, .publish-button {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
+
+            .preview-header {
+                padding: 12px 15px;
+            }
+
+            .preview-header h3 {
+                font-size: 1rem;
             }
         }
 
@@ -708,37 +896,178 @@
             background: #667eea;
             border-radius: 4px;
         }
+
+        /* 配置面板样式 */
+        .config-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: white;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            max-width: 90vw;
+        }
+
+        .config-panel.open {
+            right: 0;
+        }
+
+        /* 配置面板响应式设计 */
+        @media (max-width: 768px) {
+            .config-panel {
+                width: 100vw;
+                right: -100vw;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .config-panel {
+                width: 100vw;
+                right: -100vw;
+            }
+        }
+
+        .config-panel-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .config-panel-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .config-panel-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+
+        .config-panel-close:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .config-panel-content {
+            padding: 20px;
+        }
+
+        .config-group {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .config-group h4 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 1.1rem;
+        }
+
+        .config-field {
+            margin-bottom: 15px;
+        }
+
+        .config-field label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .config-field input, .config-field select, .config-field textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .config-field input:focus, .config-field select:focus, .config-field textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .config-field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .config-save-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .config-save-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .config-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .config-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">📝 文章发布</a>
+                <a href="image-test.html" class="nav-link">🖼️ 图片压缩测试</a>
+                <a href="ai-test.html" class="nav-link">🤖 AI 测试</a>
+                <button class="nav-link config-gear" onclick="hexoPublisher.toggleConfigPanel()" style="border: none; cursor: pointer;">⚙️ 配置</button>
+            </div>
             <h1>🚀 Hexo 发布工具</h1>
             <p>专业的 Markdown 文章发布平台 - 从配置到预览，一站式发布体验</p>
         </div>
 
         <div class="main-content">
-            <!-- 左侧：配置和文章上传 -->
+            <!-- 左侧：文章上传和AI功能 -->
             <div class="left-panel">
-                <!-- 配置管理 -->
-                <div class="config-section">
-                    <h4>⚙️ 配置管理</h4>
-                    
-                    <div class="config-item" id="blogPathItem">
-                        <div class="config-label">📁 博客目录</div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-                            <div class="config-value" id="blogPath">加载中...</div>
-                            <button class="config-btn edit" onclick="hexoPublisher.editConfig('blogPath', '博客目录')">编辑</button>
-                        </div>
-                    </div>
-                    
-                    <div class="config-item" id="imagesPathItem">
-                        <div class="config-label">🖼️ 图片目录</div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-                            <div class="config-value" id="imagesPath">加载中...</div>
-                            <button class="config-btn edit" onclick="hexoPublisher.editConfig('imagesPath', '图片目录')">编辑</button>
-                        </div>
-                    </div>
+                <!-- AI前言生成 -->
+                <div class="ai-section">
+                    <h4>🤖 AI前言生成</h4>
+                    <button id="generateFrontmatterBtn" class="ai-generate-btn" disabled>
+                        ✨ 生成文章前言
+                    </button>
+                    <div id="aiStatus" class="ai-status"></div>
                 </div>
 
                 <!-- Markdown文件上传 -->
@@ -804,10 +1133,10 @@
                     <h3>🖼️ 文章封面</h3>
                     <div class="cover-upload-area" id="coverUploadArea">
                         <input type="file" id="coverImage" class="file-input" accept="image/*" />
-                        <label for="coverImage" style="cursor: pointer; display: block;">
-                            <div style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;">🎨</div>
-                            <p style="font-size: 1.1rem; color: #6c757d; margin: 0;">点击或拖拽上传封面图片</p>
-                            <p style="font-size: 0.9rem; color: #adb5bd; margin-top: 8px;">支持 JPG、PNG、WebP 格式</p>
+                        <label for="coverImage">
+                            <div class="upload-icon">🎨</div>
+                            <p class="upload-text">点击或拖拽上传封面图片</p>
+                            <p class="upload-hint">支持 JPG、PNG、WebP 格式</p>
                         </label>
                     </div>
                     <div id="coverPreview" class="cover-preview"></div>
@@ -899,6 +1228,11 @@
                 document.getElementById('publishButton').addEventListener('click', () => {
                     this.publishToHexo();
                 });
+
+                // AI前言生成按钮
+                document.getElementById('generateFrontmatterBtn').addEventListener('click', () => {
+                    this.generateAIFrontmatter();
+                });
             }
 
             initDragDrop() {
@@ -952,79 +1286,10 @@
                 }
             }
 
+            // 配置显示方法已移除，统一使用右上角配置面板
             updateConfigDisplay() {
-                if (this.config) {
-                    document.getElementById('blogPath').textContent = this.config.postsDir || '未配置';
-                    document.getElementById('imagesPath').textContent = this.config.imagesDir || '未配置';
-                }
-            }
-
-            editConfig(configKey, configName) {
-                const item = document.getElementById(configKey + 'Item');
-                const currentValue = this.config[configKey === 'blogPath' ? 'postsDir' : 'imagesDir'] || '';
-                
-                item.innerHTML = `
-                    <div class="config-label">${configName === '博客目录' ? '📁' : '🖼️'} ${configName}</div>
-                    <input type="text" class="config-input" id="${configKey}Input" value="${currentValue}" placeholder="请输入${configName}路径">
-                    <div class="config-buttons">
-                        <button class="config-btn save" onclick="hexoPublisher.saveConfig('${configKey}', '${configName}')">保存</button>
-                        <button class="config-btn cancel" onclick="hexoPublisher.cancelEditConfig('${configKey}', '${configName}')">取消</button>
-                    </div>
-                `;
-                
-                document.getElementById(configKey + 'Input').focus();
-            }
-
-            async saveConfig(configKey, configName) {
-                const input = document.getElementById(configKey + 'Input');
-                const newValue = input.value.trim();
-                
-                if (!newValue) {
-                    this.showStatus(`❌ ${configName}不能为空`, 'error');
-                    return;
-                }
-
-                try {
-                    const configField = configKey === 'blogPath' ? 'postsDir' : 'imagesDir';
-                    
-                    const response = await fetch('/api/config', {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            [configField]: newValue
-                        })
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        this.config = result.config;
-                        this.restoreConfigDisplay(configKey, configName);
-                        this.showStatus(`✅ ${configName}更新成功`, 'success');
-                    } else {
-                        throw new Error('保存失败');
-                    }
-                } catch (error) {
-                    this.showStatus(`❌ ${configName}保存失败: ${error.message}`, 'error');
-                }
-            }
-
-            cancelEditConfig(configKey, configName) {
-                this.restoreConfigDisplay(configKey, configName);
-            }
-
-            restoreConfigDisplay(configKey, configName) {
-                const item = document.getElementById(configKey + 'Item');
-                const currentValue = this.config[configKey === 'blogPath' ? 'postsDir' : 'imagesDir'] || '未配置';
-                
-                item.innerHTML = `
-                    <div class="config-label">${configName === '博客目录' ? '📁' : '🖼️'} ${configName}</div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-                        <div class="config-value" id="${configKey}">${currentValue}</div>
-                        <button class="config-btn edit" onclick="hexoPublisher.editConfig('${configKey}', '${configName}')">编辑</button>
-                    </div>
-                `;
+                // 空方法，保持兼容性
+                // 实际配置显示由右上角配置面板处理
             }
 
             handleMarkdownFile(file) {
@@ -1207,6 +1472,16 @@
                 } else {
                     publishButton.innerHTML = '⏸️ 请先选择 Markdown 文件';
                 }
+
+                // 更新AI生成按钮状态
+                const generateBtn = document.getElementById('generateFrontmatterBtn');
+                generateBtn.disabled = !this.markdownFile;
+                
+                if (this.markdownFile) {
+                    generateBtn.innerHTML = '✨ 生成文章前言';
+                } else {
+                    generateBtn.innerHTML = '⏸️ 请先选择文章';
+                }
             }
 
             showStatus(message, type = 'info') {
@@ -1328,6 +1603,221 @@
                     this.updateProgress(step.percent, step.text);
                 }
             }
+
+            async generateAIFrontmatter() {
+                if (!this.markdownFile || !this.rawContent) {
+                    this.showAIStatus('❌ 请先选择Markdown文件', 'error');
+                    return;
+                }
+
+                const generateBtn = document.getElementById('generateFrontmatterBtn');
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = '🤖 生成中...';
+
+                try {
+                    this.showAIStatus('🤖 AI正在分析文章内容...', 'loading');
+
+                    const response = await fetch('/api/ai/generate-frontmatter', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            content: this.rawContent
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || '生成失败');
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.success && result.frontmatter) {
+                        // 自动插入前言到文章开头
+                        this.insertFrontmatter(result.frontmatter);
+                        this.showAIStatus('✅ 前言生成成功并已插入文章！', 'success');
+                    } else {
+                        throw new Error(result.error || '生成失败');
+                    }
+
+                } catch (error) {
+                    console.error('AI前言生成失败:', error);
+                    this.showAIStatus(`❌ 生成失败: ${error.message}`, 'error');
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.innerHTML = '✨ 生成文章前言';
+                }
+            }
+
+            insertFrontmatter(frontmatter) {
+                // 移除现有的front matter（如果存在）
+                let content = this.rawContent;
+                if (content.startsWith('---')) {
+                    const secondDashIndex = content.indexOf('---', 3);
+                    if (secondDashIndex !== -1) {
+                        content = content.substring(secondDashIndex + 3).trim();
+                    }
+                }
+
+                // 处理AI返回的frontmatter格式
+                let cleanFrontmatter = frontmatter.trim();
+                
+                // 如果包含```yaml标记，提取其中的内容
+                if (cleanFrontmatter.includes('```yaml')) {
+                    const yamlStart = cleanFrontmatter.indexOf('```yaml') + 7;
+                    const yamlEnd = cleanFrontmatter.lastIndexOf('```');
+                    if (yamlEnd > yamlStart) {
+                        cleanFrontmatter = cleanFrontmatter.substring(yamlStart, yamlEnd).trim();
+                    }
+                }
+                
+                // 移除开头和结尾的---（如果存在）
+                if (cleanFrontmatter.startsWith('---')) {
+                    cleanFrontmatter = cleanFrontmatter.substring(3).trim();
+                }
+                if (cleanFrontmatter.endsWith('---')) {
+                    cleanFrontmatter = cleanFrontmatter.substring(0, cleanFrontmatter.length - 3).trim();
+                }
+                
+                // 确保使用正确的---分隔符格式
+                const formattedFrontmatter = '---\n' + cleanFrontmatter + '\n---';
+
+                // 插入新的front matter
+                this.rawContent = formattedFrontmatter + '\n\n' + content;
+                this.markdownContent = this.rawContent;
+                
+                // 重新提取标题
+                this.extractTitle();
+                
+                // 更新预览
+                this.updatePreview();
+                
+                // 更新文件名选项
+                this.showFilenameOptions();
+            }
+
+            showAIStatus(message, type = 'info') {
+                const aiStatus = document.getElementById('aiStatus');
+                aiStatus.className = `ai-status ${type}`;
+                aiStatus.innerHTML = message;
+                aiStatus.style.display = 'block';
+                
+                if (type === 'success') {
+                    setTimeout(() => {
+                        aiStatus.style.display = 'none';
+                    }, 5000);
+                }
+            }
+
+            // 配置面板相关方法
+            toggleConfigPanel() {
+                const panel = document.getElementById('configPanel');
+                const overlay = document.getElementById('configOverlay');
+                
+                if (panel.classList.contains('open')) {
+                    panel.classList.remove('open');
+                    overlay.classList.remove('open');
+                } else {
+                    panel.classList.add('open');
+                    overlay.classList.add('open');
+                    this.loadAllConfig();
+                }
+            }
+
+            async loadAllConfig() {
+                try {
+                    // 加载基础配置
+                    const response = await fetch('/api/config');
+                    if (response.ok) {
+                        const config = await response.json();
+                        document.getElementById('configPostsDir').value = config.postsDir || '';
+                        document.getElementById('configImagesDir').value = config.imagesDir || '';
+                        document.getElementById('configBaseUrl').value = config.baseUrl || '';
+                    }
+
+                    // 加载AI配置
+                    const aiResponse = await fetch('/api/ai/config');
+                    if (aiResponse.ok) {
+                        const aiConfig = await aiResponse.json();
+                        if (aiConfig.success) {
+                            document.getElementById('configAiApiKey').value = aiConfig.config.hasApiKey ? '••••••••' : '';
+                            document.getElementById('configAiModel').value = aiConfig.config.defaultModel || 'doubao-seed-1-6-250615';
+                            document.getElementById('configTitlePrompt').value = aiConfig.config.prompts?.title || '';
+                            document.getElementById('configFrontmatterPrompt').value = aiConfig.config.prompts?.frontmatter || '';
+                        }
+                    }
+                } catch (error) {
+                    console.error('加载配置失败:', error);
+                    this.showStatus('❌ 加载配置失败: ' + error.message, 'error');
+                }
+            }
+
+            async saveAllConfig() {
+                try {
+                    // 保存基础配置
+                    const postsDir = document.getElementById('configPostsDir').value.trim();
+                    const imagesDir = document.getElementById('configImagesDir').value.trim();
+                    const baseUrl = document.getElementById('configBaseUrl').value.trim();
+
+                    if (postsDir || imagesDir || baseUrl) {
+                        const configData = {};
+                        if (postsDir) configData.postsDir = postsDir;
+                        if (imagesDir) configData.imagesDir = imagesDir;
+                        if (baseUrl) configData.baseUrl = baseUrl;
+
+                        const response = await fetch('/api/config', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(configData)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('基础配置保存失败');
+                        }
+                    }
+
+                    // 保存AI配置
+                    const apiKey = document.getElementById('configAiApiKey').value.trim();
+                    const defaultModel = document.getElementById('configAiModel').value;
+                    const titlePrompt = document.getElementById('configTitlePrompt').value.trim();
+                    const frontmatterPrompt = document.getElementById('configFrontmatterPrompt').value.trim();
+
+                    if (apiKey !== '••••••••' || defaultModel || titlePrompt || frontmatterPrompt) {
+                        const aiConfigData = {};
+                        if (apiKey && apiKey !== '••••••••') aiConfigData.apiKey = apiKey;
+                        if (defaultModel) aiConfigData.defaultModel = defaultModel;
+                        if (titlePrompt || frontmatterPrompt) {
+                            aiConfigData.prompts = {};
+                            if (titlePrompt) aiConfigData.prompts.title = titlePrompt;
+                            if (frontmatterPrompt) aiConfigData.prompts.frontmatter = frontmatterPrompt;
+                        }
+
+                        const aiResponse = await fetch('/api/ai/config', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(aiConfigData)
+                        });
+
+                        if (!aiResponse.ok) {
+                            throw new Error('AI配置保存失败');
+                        }
+                    }
+
+                    this.showStatus('✅ 配置保存成功！', 'success');
+                    this.toggleConfigPanel();
+                    this.loadConfig(); // 重新加载配置
+
+                } catch (error) {
+                    console.error('保存配置失败:', error);
+                    this.showStatus('❌ 配置保存失败: ' + error.message, 'error');
+                }
+            }
         }
 
         // 初始化应用
@@ -1336,5 +1826,58 @@
             hexoPublisher = new HexoPublisher();
         });
     </script>
+
+    <!-- 配置面板 -->
+    <div class="config-overlay" id="configOverlay" onclick="hexoPublisher.toggleConfigPanel()"></div>
+    <div class="config-panel" id="configPanel">
+        <div class="config-panel-header">
+            <h3>⚙️ 系统配置</h3>
+            <button class="config-panel-close" onclick="hexoPublisher.toggleConfigPanel()">&times;</button>
+        </div>
+        <div class="config-panel-content">
+            <!-- 基础配置 -->
+            <div class="config-group">
+                <h4>📁 基础配置</h4>
+                <div class="config-field">
+                    <label for="configPostsDir">博客文章目录</label>
+                    <input type="text" id="configPostsDir" placeholder="/path/to/hexo/source/_posts">
+                </div>
+                <div class="config-field">
+                    <label for="configImagesDir">图片存储目录</label>
+                    <input type="text" id="configImagesDir" placeholder="/path/to/hexo/source/images">
+                </div>
+                <div class="config-field">
+                    <label for="configBaseUrl">博客基础URL</label>
+                    <input type="text" id="configBaseUrl" placeholder="https://yourblog.com">
+                </div>
+            </div>
+
+            <!-- AI配置 -->
+            <div class="config-group">
+                <h4>🤖 AI配置</h4>
+                <div class="config-field">
+                    <label for="configAiApiKey">Volcengine API密钥</label>
+                    <input type="password" id="configAiApiKey" placeholder="输入你的API密钥">
+                </div>
+                <div class="config-field">
+                    <label for="configAiModel">默认AI模型</label>
+                    <select id="configAiModel">
+                        <option value="doubao-seed-1-6-250615">豆包 Seed 1.6 (250615)</option>
+                        <option value="doubao-seed-1-6-flash-250715">豆包 Seed 1.6 Flash (250715)</option>
+                    </select>
+                </div>
+                <div class="config-field">
+                    <label for="configTitlePrompt">标题生成提示词</label>
+                    <textarea id="configTitlePrompt" placeholder="请为以下文章内容生成一个吸引人的标题..."></textarea>
+                </div>
+                <div class="config-field">
+                    <label for="configFrontmatterPrompt">前言生成提示词</label>
+                    <textarea id="configFrontmatterPrompt" placeholder="请为以下文章生成Hexo博客的front matter..."></textarea>
+                </div>
+            </div>
+
+            <button class="config-save-btn" onclick="hexoPublisher.saveAllConfig()">💾 保存所有配置</button>
+        </div>
+    </div>
 </body>
 </html>

@@ -234,17 +234,28 @@ class ImageProcessor {
       
       // 检查是否需要转换为WebP
       if (compression.convertToWebP && format !== 'webp') {
-        // 所有非WebP格式转换为WebP
+        console.log(`   🔄 转换为WebP: ${path.basename(imagePath)} (${format} → webp)`);
+        
+        // 智能选择WebP压缩模式
         const webpOptions = {
-          effort: 6             // 最高压缩努力程度
+          effort: 6,             // 最高压缩努力程度
+          smartSubsample: true   // 智能子采样
         };
         
-        if (compression.webpLossless !== false) {
+        // 根据图片类型和大小智能选择压缩模式
+        const isLargeImage = originalStats.size > 500 * 1024; // 大于500KB
+        const isPNG = format === 'png';
+        
+        if (isPNG && !isLargeImage && compression.webpLossless !== false) {
+          // 小PNG图片使用无损压缩保持质量
           webpOptions.lossless = true;
           webpOptions.quality = 100;
+          console.log(`   🎯 使用无损WebP压缩 (PNG源文件)`);
         } else {
+          // 大图片或JPEG使用有损压缩获得更好的压缩比
           webpOptions.lossless = false;
-          webpOptions.quality = compression.webpQuality || 85;
+          webpOptions.quality = compression.webpQuality || 90;
+          console.log(`   🎯 使用有损WebP压缩 (质量: ${webpOptions.quality})`);
         }
         
         sharpInstance = sharpInstance.webp(webpOptions);
@@ -253,26 +264,46 @@ class ImageProcessor {
         const maxWidth = compression.maxWidth || 2400;
         const maxHeight = compression.maxHeight || 2400;
         if (width > maxWidth || height > maxHeight) {
+          console.log(`   📏 调整尺寸: ${width}x${height} → 最大${maxWidth}x${maxHeight}`);
           sharpInstance = sharpInstance.resize(maxWidth, maxHeight, { 
             withoutEnlargement: true,
-            fit: 'inside'
+            fit: 'inside',
+            kernel: sharp.kernel.lanczos3  // 使用高质量缩放算法
           });
         }
         
         // 生成新的WebP文件路径
         const parsedPath = path.parse(imagePath);
         const newPath = path.join(parsedPath.dir, parsedPath.name + '.webp');
-        await sharpInstance.toFile(newPath);
         
-        // 检查压缩效果
-        const newStats = fs.statSync(newPath);
-        const compressionRatio = ((originalStats.size - newStats.size) / originalStats.size * 100).toFixed(1);
-        
-        // 删除原文件，使用新文件
-        fs.unlinkSync(imagePath);
-        console.log(`   🗜️  转换为WebP: ${path.basename(imagePath)} → ${path.basename(newPath)} (减少${compressionRatio}%)`);
-        console.log(`   📊  原始大小: ${(originalStats.size / 1024).toFixed(2)}KB → WebP大小: ${(newStats.size / 1024).toFixed(2)}KB`);
-        return newPath;
+        try {
+          await sharpInstance.toFile(newPath);
+          
+          // 检查压缩效果
+          const newStats = fs.statSync(newPath);
+          const compressionRatio = ((originalStats.size - newStats.size) / originalStats.size * 100).toFixed(1);
+          const sizeBefore = (originalStats.size / 1024).toFixed(2);
+          const sizeAfter = (newStats.size / 1024).toFixed(2);
+          
+          // 只有在压缩效果显著时才替换原文件
+          if (newStats.size < originalStats.size * 0.95) { // 至少减少5%
+            fs.unlinkSync(imagePath);
+            console.log(`   ✅ WebP转换成功: ${sizeBefore}KB → ${sizeAfter}KB (减少${compressionRatio}%)`);
+            return newPath;
+          } else {
+            // 压缩效果不佳，保留原文件
+            fs.unlinkSync(newPath);
+            console.log(`   ℹ️  WebP压缩效果不佳，保留原格式: ${sizeBefore}KB`);
+            return imagePath;
+          }
+        } catch (webpError) {
+          console.log(`   ⚠️  WebP转换失败，保留原格式: ${webpError.message}`);
+          // 清理可能的临时文件
+          if (fs.existsSync(newPath)) {
+            fs.unlinkSync(newPath);
+          }
+          return imagePath;
+        }
       }
       
       // 保持原格式的优化压缩
